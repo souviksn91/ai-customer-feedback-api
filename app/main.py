@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from sqlalchemy import text
 
 from app.database import engine
+from app.routers.v1 import router as api_router
 
 
 app = FastAPI(
@@ -9,14 +9,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+app.include_router(api_router)
 
 @app.get("/")
 def root():
     return {"message": "AI Customer Feedback Intelligence API"}
 
-
-@app.get("/db-test")
-def db_test():
-    with engine.connect() as connection:
-        result = connection.execute(text("SELECT 1"))
-        return {"database": result.scalar()}
