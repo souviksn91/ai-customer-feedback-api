@@ -1,4 +1,9 @@
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator, ConfigDict
+import uuid
+from datetime import datetime
+
+from app.models import Priority, Sentiment
+
 
 
 class UserRegister(BaseModel):
@@ -21,3 +26,34 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+
+
+# FEEDBACK SCHEMAS
+
+# client sends the feedback
+class FeedbackCreate(BaseModel):
+    text: str = Field(min_length=1, max_length=5000)
+
+
+# AI's response to be saved to the DB
+class FeedbackAnalysis(BaseModel):
+    summary: str
+    sentiment: Sentiment
+    category: str
+    priority: Priority
+    keywords: list[str]
+
+
+# how our API sends the response to the client
+class FeedbackResponse(BaseModel):
+    id: uuid.UUID
+    text: str
+    summary: str
+    sentiment: Sentiment
+    category: str
+    priority: Priority
+    keywords: list[str]
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)  
