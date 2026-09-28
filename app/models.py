@@ -46,6 +46,9 @@ class Feedback(Base):
 
     __tablename__ = "feedback"
 
+    # why all columns are nullable=False? 
+    # because our endpoint performs the AI analysis before creating a DB object
+    # so if OpenAI fails, we won't create an incomplete Feedback object in the DB
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
     text: Mapped[str] = mapped_column(Text, nullable=False)
