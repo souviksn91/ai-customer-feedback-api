@@ -2,8 +2,8 @@ import uuid
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_current_user, get_db
-from app.models import Feedback, Sentiment, Priority, User
+from app.dependencies import get_current_user, get_db, check_feedback_daily_limit
+from app.models import Feedback, Sentiment, Priority, User, APIRequestLog
 from app.schemas import FeedbackCreate, FeedbackResponse
 from app.services.ai import analyze_feedback
 
@@ -23,8 +23,9 @@ router = APIRouter(
         "", 
         response_model=FeedbackResponse, 
         status_code=status.HTTP_201_CREATED,
-        # add a response for 400 Bad Request 
-        # when the text is not recognized as genuine customer feedback
+        # limit the number of feedbacks a user can submit per day to 5
+        dependencies=[Depends(check_feedback_daily_limit)],  
+        # add a response for 400 Bad Request when the text is not a genuine customer feedback
         responses={
             status.HTTP_400_BAD_REQUEST: {
                 "description": "The submitted text is not recognized as genuine customer feedback.",
@@ -39,15 +40,29 @@ def create_feedback(feedback_data: FeedbackCreate, db: Session = Depends(get_db)
     # and returns a FeedbackAnalysis object (defined in schemas.py)
     analysis = analyze_feedback(feedback_data.text)
 
-    # if the AI determines that the text is not genuine customer feedback, raise an exception
+    # save the API request log to the APIRequestLog table in the database
+    # save whether the text is a genuine customer feedback
+    api_request_log = APIRequestLog(
+        user_id=current_user.id,
+        request_text=feedback_data.text,
+        is_customer_feedback=analysis.is_customer_feedback,  
+    )
+    db.add(api_request_log)
+
+    # if the text is not recognized as genuine customer feedback, 
+    # first commit save to APIRequestLog table (IMPORTANT)
+    # then raise an exception
     if not analysis.is_customer_feedback:
-        raise HTTPException(
+        db.commit() 
+
+        # this exception is only for client's information
+        raise HTTPException(  
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The submitted text is not recognized as genuine customer feedback.",
         )
 
     # create a new Feedback (database) object from FeedbackAnalysis and the current user
-    # it only happens if the text is recognized as genuine customer feedback
+    # save the feedback to the Feedback table in the database
     feedback = Feedback(
         user_id=current_user.id,
         text=feedback_data.text,
@@ -57,8 +72,6 @@ def create_feedback(feedback_data: FeedbackCreate, db: Session = Depends(get_db)
         priority=analysis.priority,
         keywords=analysis.keywords,
     )
-
-    # save the feedback to the database
     db.add(feedback)
     db.commit()
 

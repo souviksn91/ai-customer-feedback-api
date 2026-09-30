@@ -5,12 +5,15 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from app.config import settings
-from app.models import User
+from app.models import APIRequestLog, User
 from app.database import SessionLocal
 
 
+# --------------------------------
 # dependency to get a database session
 def get_db() -> Generator[Session, None, None]:
     db = SessionLocal()
@@ -22,6 +25,7 @@ def get_db() -> Generator[Session, None, None]:
 
 
 
+# --------------------------------
 # this will be used to extract the token from the Authorization header
 security = HTTPBearer()
 
@@ -75,3 +79,42 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
     # return the user
     return user
+
+
+
+# --------------------------------
+# dependency to check if the current user is an admin
+def check_feedback_daily_limit(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> None:
+
+    # if the user is an admin, skip the limit check
+    if current_user.is_admin:
+        return
+
+    # get the current date in IST timezone
+    kolkata_now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    kolkata_today_start = kolkata_now.replace(
+        hour=0,
+        minute=0,
+        second=0,
+        microsecond=0,
+    )
+
+    # converts the IST start of the day to UTC for comparison with the created_at column in the database
+    today_start_utc = kolkata_today_start.astimezone(timezone.utc)
+
+    # count the number of feedbacks submitted by the user today
+    request_count = (
+        db.query(APIRequestLog)
+        .filter(
+            APIRequestLog.user_id == current_user.id,
+            APIRequestLog.created_at >= today_start_utc,  
+        )
+        .count()
+    )
+
+    # if the user has submitted 5 or more feedbacks today, raise an exception
+    if request_count >= 5:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Daily feedback submission limit reached. Please try again tomorrow.",
+        )

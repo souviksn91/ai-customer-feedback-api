@@ -1,9 +1,10 @@
 import uuid
 from datetime import datetime, timezone
 from enum import Enum
-from sqlalchemy import DateTime, String, ForeignKey, Text, Enum as SQLEnum
+from sqlalchemy import DateTime, String, ForeignKey, Text, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
+
 
 
 from app.database import Base
@@ -35,9 +36,11 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(default=True)
+    is_admin: Mapped[bool] = mapped_column(default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     feedback: Mapped[list["Feedback"]] = relationship(back_populates="user")
+    api_request_logs: Mapped[list["APIRequestLog"]] = relationship(back_populates="user")
 
 
 
@@ -60,3 +63,21 @@ class Feedback(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     user: Mapped["User"] = relationship(back_populates="feedback")
+
+
+
+
+# APIRequestLog table
+# logs every request that actually reaches the OpenAI API
+class APIRequestLog(Base):
+
+    __tablename__ = "api_request_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
+    request_text: Mapped[str] = mapped_column(Text, nullable=False)
+    is_customer_feedback: Mapped[bool] = mapped_column(nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True)
+
+    user: Mapped["User"] = relationship(back_populates="api_request_logs")
+
