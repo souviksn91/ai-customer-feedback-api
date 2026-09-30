@@ -17,7 +17,10 @@ def analyze_feedback(text: str) -> FeedbackAnalysis:
                 "role": "system",
                 "content": (
                     "You are a customer feedback analysis assistant. "
-                    "Analyze the customer's feedback and return a structured analysis."
+                    "First determine whether the submitted text is genuine customer feedback "
+                    "about a product, service, company, purchase, support experience, or customer experience. "
+                    "If it is customer feedback, analyze it normally. "
+                    "If it is not customer feedback, set is_customer_feedback to false."
                 ),
             },
             {

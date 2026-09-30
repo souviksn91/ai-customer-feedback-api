@@ -19,7 +19,18 @@ router = APIRouter(
 # --------------------------------
 # create feedback endpoint
 # endpoint is: POST api/v1/feedback
-@router.post("", response_model=FeedbackResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+        "", 
+        response_model=FeedbackResponse, 
+        status_code=status.HTTP_201_CREATED,
+        # add a response for 400 Bad Request 
+        # when the text is not recognized as genuine customer feedback
+        responses={
+            status.HTTP_400_BAD_REQUEST: {
+                "description": "The submitted text is not recognized as genuine customer feedback.",
+            },
+        }
+)
 def create_feedback(feedback_data: FeedbackCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
 
     # call the AI
@@ -28,7 +39,15 @@ def create_feedback(feedback_data: FeedbackCreate, db: Session = Depends(get_db)
     # and returns a FeedbackAnalysis object (defined in schemas.py)
     analysis = analyze_feedback(feedback_data.text)
 
+    # if the AI determines that the text is not genuine customer feedback, raise an exception
+    if not analysis.is_customer_feedback:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The submitted text is not recognized as genuine customer feedback.",
+        )
+
     # create a new Feedback (database) object from FeedbackAnalysis and the current user
+    # it only happens if the text is recognized as genuine customer feedback
     feedback = Feedback(
         user_id=current_user.id,
         text=feedback_data.text,
