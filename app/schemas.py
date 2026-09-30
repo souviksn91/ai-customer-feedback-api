@@ -33,7 +33,7 @@ class UserLogin(BaseModel):
 
 # client sends the feedback
 class FeedbackCreate(BaseModel):
-    text: str = Field(min_length=1, max_length=5000)
+    text: str = Field(min_length=10, max_length=500)
 
 
 # AI's response to be saved to the DB
