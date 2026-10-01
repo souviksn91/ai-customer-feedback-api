@@ -58,3 +58,24 @@ class FeedbackResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)  
+
+
+
+# single user usage data for admin
+class AdminUserUsage(BaseModel):
+    user_id: uuid.UUID
+    first_name: str
+    last_name: str
+    email: str
+    joined_at: datetime
+    is_active: bool
+    is_admin: bool
+    total_ai_requests: int
+    relevant_requests: int
+    irrelevant_requests: int
+
+
+# list of (single user usage data) for admin
+class AdminUsageResponse(BaseModel):
+    total_accounts: int
+    users: list[AdminUserUsage]

@@ -83,7 +83,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 
 
 # --------------------------------
-# dependency to check if the current user is an admin
+# dependency to check if the current user has reached daily limit
 def check_feedback_daily_limit(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> None:
 
     # if the user is an admin, skip the limit check
@@ -118,3 +118,17 @@ def check_feedback_daily_limit(db: Session = Depends(get_db), current_user: User
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail="Daily feedback submission limit reached. Please try again tomorrow.",
         )
+
+
+
+# --------------------------------
+# dependency to check if the current user is an admin
+def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required.",
+        )
+
+    return current_user
