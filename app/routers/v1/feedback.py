@@ -1,3 +1,4 @@
+import logging
 import uuid
 from fastapi import APIRouter, Depends, status, HTTPException
 from sqlalchemy.orm import Session
@@ -5,8 +6,10 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_current_user, get_db, check_feedback_daily_limit
 from app.models import Feedback, Sentiment, Priority, User, APIRequestLog
 from app.schemas import FeedbackCreate, FeedbackResponse
-from app.services.ai import analyze_feedback
+from app.services.ai import analyze_feedback, AIServiceError
 
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/feedback",
@@ -38,48 +41,72 @@ def create_feedback(feedback_data: FeedbackCreate, db: Session = Depends(get_db)
     # analyze the feedback using OpenAI
     # analyze_feedback function takes the feedback text as input 
     # and returns a FeedbackAnalysis object (defined in schemas.py)
-    analysis = analyze_feedback(feedback_data.text)
+    # added try-except to handle errors if OpenAI fails to analyze the feedback
+    try: 
+        analysis = analyze_feedback(feedback_data.text)
+    except AIServiceError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Feedback analysis service is temporarily unavailable. Please try again later."
+        )
 
     # save the API request log to the APIRequestLog table in the database
     # save whether the text is a genuine customer feedback
-    api_request_log = APIRequestLog(
-        user_id=current_user.id,
-        request_text=feedback_data.text,
-        is_customer_feedback=analysis.is_customer_feedback,  
-    )
-    db.add(api_request_log)
-
-    # if the text is not recognized as genuine customer feedback, 
-    # first commit save to APIRequestLog table (IMPORTANT)
-    # then raise an exception
-    if not analysis.is_customer_feedback:
-        db.commit() 
-
-        # this exception is only for client's information
-        raise HTTPException(  
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="The submitted text is not recognized as genuine customer feedback.",
+    # try: log every successfuk request
+    try:
+        api_request_log = APIRequestLog(
+            user_id=current_user.id,
+            request_text=feedback_data.text,
+            is_customer_feedback=analysis.is_customer_feedback,  
+            )
+        
+        db.add(api_request_log)
+        
+        # if the text is not recognized as genuine customer feedback, 
+        # # first commit save to APIRequestLog table (IMPORTANT)
+        # # then raise an exception
+        if not analysis.is_customer_feedback:
+            db.commit() 
+            # this exception is only for client's information
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The submitted text is not recognized as genuine customer feedback.",
+            )
+        
+        # create a new Feedback (database) object from FeedbackAnalysis and the current user
+        # # save the feedback to the Feedback table in the database
+        feedback = Feedback(
+            user_id=current_user.id,
+            text=feedback_data.text,
+            summary=analysis.summary,
+            sentiment=analysis.sentiment,
+            category=analysis.category,
+            priority=analysis.priority,
+            keywords=analysis.keywords,
         )
+        db.add(feedback)
+        db.commit()
+        
+        # refresh the feedback object to get the generated values (like id, created_at)
+        db.refresh(feedback)  
+        
+        # return feedback as response which will be serialized to FeedbackResponse model
+        return feedback
 
-    # create a new Feedback (database) object from FeedbackAnalysis and the current user
-    # save the feedback to the Feedback table in the database
-    feedback = Feedback(
-        user_id=current_user.id,
-        text=feedback_data.text,
-        summary=analysis.summary,
-        sentiment=analysis.sentiment,
-        category=analysis.category,
-        priority=analysis.priority,
-        keywords=analysis.keywords,
-    )
-    db.add(feedback)
-    db.commit()
-
-    # refresh the feedback object to get the generated values (like id, created_at)
-    db.refresh(feedback)  
-
-    # return feedback as response which will be serialized to FeedbackResponse model
-    return feedback
+    # we do not want our own 400 response (for irrevalent feedback) to become a 500 error, 
+    # so we catch it and re-raise it
+    except HTTPException:
+        raise
+    except Exception:
+        # if any other exception occurs, rollback the transaction
+        db.rollback()
+        # log technical error for debugging
+        logger.exception("Database error while saving feedback.")
+        # and return a 500 Internal Server Error to the client
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An internal error occurred while saving the feedback.",
+        )
 
 
 
