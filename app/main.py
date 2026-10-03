@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 import logging
 
-from app.database import engine
 from app.routers.v1 import router as api_router
 
 # configure the application's basic logging
