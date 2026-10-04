@@ -17,7 +17,7 @@ router = APIRouter(
 
 
 
-@router.get("/usage", response_model=AdminUsageResponse)
+@router.get("/usage", response_model=AdminUsageResponse, summary="View AI usage statistics")
 def get_admin_usage(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
 
     # get every user and count of their AI requests

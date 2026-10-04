@@ -11,12 +11,18 @@ logging.basicConfig(
 
 app = FastAPI(
     title="AI Customer Feedback Intelligence API",
+    description=(
+        "A FastAPI backend that uses AI to analyze customer feedback "
+        "and extract sentiment, category, priority, summary, and keywords. "
+        "The API includes JWT authentication, feedback management, "
+        "filtering, pagination, daily AI usage limits, and admin usage monitoring."
+    ),
     version="1.0.0",
 )
 
 app.include_router(api_router)
 
-@app.get("/")
+
+@app.get("/", tags=["General"], summary="Check API status")
 def root():
     return {"message": "AI Customer Feedback Intelligence API"}
-

@@ -17,7 +17,7 @@ router = APIRouter(
 
 
 # register endpoint
-@router.post("/register", status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED, summary="Register a new user")
 def register(user_data: UserRegister, db: Session = Depends(get_db)):
 
     existing_user = db.scalar(
@@ -52,7 +52,7 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
 
 
 # login endpoint
-@router.post("/login")
+@router.post("/login", summary="Log in and receive an access token")
 def login(user_data: UserLogin, db: Session = Depends(get_db)):
     
     user = db.scalar(
@@ -85,7 +85,7 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
     }
 
 
-@router.get("/me")
+@router.get("/me", summary="Get the current user")
 def get_me(
     current_user: User = Depends(get_current_user),
 ):
@@ -97,7 +97,7 @@ def get_me(
     }
 
 # account delete endpoint
-@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/me", status_code=status.HTTP_204_NO_CONTENT, summary="Deactivate the current user account")
 def deactivate_account(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
 
     current_user.is_active = False

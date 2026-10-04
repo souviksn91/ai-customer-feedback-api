@@ -33,7 +33,8 @@ router = APIRouter(
             status.HTTP_400_BAD_REQUEST: {
                 "description": "The submitted text is not recognized as genuine customer feedback.",
             },
-        }
+        },
+        summary="Analyze and create customer feedback",
 )
 def create_feedback(feedback_data: FeedbackCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
 
@@ -114,7 +115,7 @@ def create_feedback(feedback_data: FeedbackCreate, db: Session = Depends(get_db)
 # --------------------------------
 # get the list of feedbacks for the current user
 # endpoint is: GET api/v1/feedback
-@router.get("", response_model=list[FeedbackResponse])
+@router.get("", response_model=list[FeedbackResponse], summary="Get feedback with filtering and pagination")
 # filter by sentiment and priority if provided (None means not mandatory)
 # add pagination with page and limit query parameters 
 # get the current user from the token
@@ -159,7 +160,7 @@ def get_feedback(
 # --------------------------------
 # get a single feedback of the current user by feedback_id
 # endpoint is: GET api/v1/feedback/{feedback_id}
-@router.get("/{feedback_id}", response_model=FeedbackResponse)
+@router.get("/{feedback_id}", response_model=FeedbackResponse,summary="Get feedback by ID")
 def get_feedback_by_id(feedback_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
 
     # get the feedback only for the current user
@@ -183,7 +184,7 @@ def get_feedback_by_id(feedback_id: uuid.UUID, db: Session = Depends(get_db), cu
 # --------------------------------
 # delete a single feedback of the current user by feedback_id
 # endpoint is: DELETE api/v1/feedback/{feedback_id}
-@router.delete("/{feedback_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{feedback_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete feedback")
 def delete_feedback(feedback_id: uuid.UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
 
     # get the feedback only for the current user
