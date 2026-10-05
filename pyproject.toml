@@ -1,7 +1,7 @@
 [project]
 name = "ai-customer-feedback-api"
-version = "0.1.0"
-description = "Add your description here"
+version = "1.0.0"
+description = "AI-powered customer feedback analysis API built with FastAPI, PostgreSQL, and OpenAI"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -22,4 +22,5 @@ pythonpath = ["."]
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "python-dotenv>=1.1.0",
 ]
