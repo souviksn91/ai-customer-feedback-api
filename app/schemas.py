@@ -29,6 +29,8 @@ class UserLogin(BaseModel):
 
 
 
+
+# -------------------------------- 
 # FEEDBACK SCHEMAS
 
 # client sends the feedback
@@ -78,4 +80,5 @@ class AdminUserUsage(BaseModel):
 # list of (single user usage data) for admin
 class AdminUsageResponse(BaseModel):
     total_accounts: int
-    users: list[AdminUserUsage]
+    # using AdminUserUsage schema for each user in the list  
+    users: list[AdminUserUsage]    

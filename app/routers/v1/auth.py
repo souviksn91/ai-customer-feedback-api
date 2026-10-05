@@ -20,18 +20,22 @@ router = APIRouter(
 @router.post("/register", status_code=status.HTTP_201_CREATED, summary="Register a new user")
 def register(user_data: UserRegister, db: Session = Depends(get_db)):
 
+    # checks if user with the same email already exists in the database
     existing_user = db.scalar(
         select(User).where(User.email == user_data.email)
     )
 
+    # raise HTTPException if user already exists
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email is already registered",
         )
 
+    # hash the password before storing it in the database
     hashed_password = hash_password(user_data.password)
 
+    # create a new User object and add it to the database
     user = User(
         first_name=user_data.first_name,
         last_name=user_data.last_name,
@@ -54,29 +58,32 @@ def register(user_data: UserRegister, db: Session = Depends(get_db)):
 # login endpoint
 @router.post("/login", summary="Log in and receive an access token")
 def login(user_data: UserLogin, db: Session = Depends(get_db)):
-    
+
+    # retrieve the user from the database based on the provided email
     user = db.scalar(
         select(User).where(User.email == user_data.email)
     )
 
+    # raise HTTPException if user does not exist
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
-
+    # raise HTTPException if the user account is inactive
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Account is inactive",
         )
-
+    # verify the provided password against the stored hashed password
     if not verify_password(user_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password",
         )
 
+    # generate a JWT access token using create_access_token function from auth service
     access_token = create_access_token(str(user.id))
 
     return {
@@ -85,6 +92,8 @@ def login(user_data: UserLogin, db: Session = Depends(get_db)):
     }
 
 
+
+# get current user endpoint
 @router.get("/me", summary="Get the current user")
 def get_me(
     current_user: User = Depends(get_current_user),
@@ -95,6 +104,7 @@ def get_me(
         "last_name": current_user.last_name,
         "email": current_user.email,
     }
+
 
 # account delete endpoint
 @router.delete("/me", status_code=status.HTTP_204_NO_CONTENT, summary="Deactivate the current user account")

@@ -25,7 +25,7 @@ class Priority(str, Enum):
 
     
 
-# User table
+# users table
 class User(Base):
 
     __tablename__ = "users"
@@ -44,7 +44,7 @@ class User(Base):
 
 
 
-# Feedback table
+# feedback table
 class Feedback(Base):
 
     __tablename__ = "feedback"
@@ -67,7 +67,7 @@ class Feedback(Base):
 
 
 
-# APIRequestLog table
+# api_request_logs table
 # logs every request that actually reaches the OpenAI API
 class APIRequestLog(Base):
 

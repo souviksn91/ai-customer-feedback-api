@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 client = OpenAI(api_key=settings.openai_api_key)
 
+# custom exception for AI service errors
 class AIServiceError(Exception):
     """Raised when the AI service cannot analyze feedback."""
 
@@ -31,7 +32,7 @@ def analyze_feedback(text: str) -> FeedbackAnalysis:
                 },
                 {"role": "user", "content": text},
             ],
-            text_format=FeedbackAnalysis,
+            text_format=FeedbackAnalysis,  # Pydantic model for structured output
         )
 
         return response.output_parsed

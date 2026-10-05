@@ -16,8 +16,8 @@ router = APIRouter(
 
 
 
-
-@router.get("/usage", response_model=AdminUsageResponse, summary="View AI usage statistics")
+# get AI usage statistics endpoint (admin only)
+@router.get("/usage", response_model=AdminUsageResponse, summary="View AI usage statistics (admin only)")
 def get_admin_usage(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
 
     # get every user and count of their AI requests
@@ -37,7 +37,7 @@ def get_admin_usage(db: Session = Depends(get_db), current_user: User = Depends(
             # count irrelevant requests
             func.count(case((APIRequestLog.is_customer_feedback.is_(False), 1))).label("irrelevant_requests"),
         )
-        # outerjoin keeps users with 0 requests in the result set
+        # outerjoin keeps users with 0 requests
         .outerjoin(
             APIRequestLog,
             APIRequestLog.user_id == User.id,

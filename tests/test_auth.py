@@ -6,6 +6,8 @@ from app.main import app
 client = TestClient(app)
 
 
+
+# test user registration 
 def test_register_user(clean_database):
     response = client.post(
         "/api/v1/auth/register",
@@ -21,6 +23,8 @@ def test_register_user(clean_database):
     assert response.status_code == 201
 
 
+
+# test user login
 def test_login_user(clean_database):
     # first create the user
     register_response = client.post(
@@ -53,7 +57,7 @@ def test_login_user(clean_database):
     assert data["token_type"] == "bearer"
 
 
-
+# test that registering with an existing email returns a 409 conflict
 def test_duplicate_email_rejected(clean_database):
     # register the user once
     first_response = client.post(

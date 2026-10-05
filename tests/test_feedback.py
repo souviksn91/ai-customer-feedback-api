@@ -9,6 +9,7 @@ from app.schemas import FeedbackAnalysis
 client = TestClient(app)
 
 
+# --------------------------------
 # create a fake FeedbackAnalysis object for testing
 def fake_feedback_analysis():
     return FeedbackAnalysis(
@@ -22,6 +23,7 @@ def fake_feedback_analysis():
 
 
 
+# --------------------------------
 # register a user and get the JWT token for authentication
 def get_auth_token():
     # register a test user
@@ -48,7 +50,7 @@ def get_auth_token():
     return response.json()["access_token"]
 
 
-
+# --------------------------------
 # create a fake irrelevant FeedbackAnalysis object for testing
 def fake_irrelevant_analysis():
     return FeedbackAnalysis(
@@ -61,6 +63,7 @@ def fake_irrelevant_analysis():
     )
 
 
+# --------------------------------
 # test creating a feedback
 def test_create_feedback(clean_database, monkeypatch):
     # replace the real OpenAI call with our fake analysis
@@ -91,6 +94,7 @@ def test_create_feedback(clean_database, monkeypatch):
 
 
 
+# --------------------------------
 # test creating a feedback with too short text
 def test_feedback_too_short(clean_database):
     token = get_auth_token()
@@ -107,6 +111,7 @@ def test_feedback_too_short(clean_database):
 
 
 
+# --------------------------------
 # test creating a feedback with too long text
 def test_feedback_too_long(clean_database):
     token = get_auth_token()
@@ -122,6 +127,8 @@ def test_feedback_too_long(clean_database):
     assert response.status_code == 422
 
 
+
+# --------------------------------
 # test creating a feedback with irrelevant text
 def fake_irrelevant_analysis():
     return FeedbackAnalysis(
@@ -135,7 +142,7 @@ def fake_irrelevant_analysis():
 
 
 
-
+# --------------------------------
 # test that irrelevant feedback is rejected
 def test_irrelevant_feedback_rejected(clean_database, monkeypatch):
     monkeypatch.setattr(
@@ -156,7 +163,7 @@ def test_irrelevant_feedback_rejected(clean_database, monkeypatch):
     assert response.status_code == 400
 
 
-
+# --------------------------------
 # test GET with pagination
 def test_get_feedback_with_pagination(clean_database, monkeypatch):
     monkeypatch.setattr(
@@ -193,7 +200,7 @@ def test_get_feedback_with_pagination(clean_database, monkeypatch):
     assert len(data) == 1
 
 
-
+# --------------------------------
 # test GET with filtering by sentiment
 def test_filter_feedback_by_sentiment(clean_database, monkeypatch):
     # monkeypatch the analyze_feedback function to return a fake analysis
@@ -233,6 +240,7 @@ def test_filter_feedback_by_sentiment(clean_database, monkeypatch):
 
 
 
+# --------------------------------
 # test GET with filtering by priority
 def test_filter_feedback_by_priority(clean_database, monkeypatch):
     # monkeypatch the analyze_feedback function to return a fake analysis
@@ -272,6 +280,7 @@ def test_filter_feedback_by_priority(clean_database, monkeypatch):
 
 
 
+# --------------------------------
 # test deleting a feedback
 def test_delete_feedback(clean_database, monkeypatch):
     monkeypatch.setattr(
@@ -313,6 +322,7 @@ def test_delete_feedback(clean_database, monkeypatch):
 
 
 
+# --------------------------------
 # test that an admin can access the usage endpoint
 def test_admin_can_access_usage(clean_database):
     # register a user (as admin)
@@ -353,6 +363,7 @@ def test_admin_can_access_usage(clean_database):
     assert response.status_code == 200
 
 
+# --------------------------------
 # test that a normal user cannot access the admin usage endpoint
 def test_normal_user_cannot_access_usage(clean_database):
     # register a normal user
